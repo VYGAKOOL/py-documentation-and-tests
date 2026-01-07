@@ -9,7 +9,6 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
-
 from cinema.models import (
     Genre,
     Actor,
@@ -80,26 +79,26 @@ class MovieViewSet(
         parameters=[
             OpenApiParameter(
                 name="title",
-                description="Filter by movie title",
-                type=str,
+                description="Filter by movie title (insensitive contains)",
+                type=OpenApiTypes.STR,
                 required=False,
             ),
             OpenApiParameter(
                 name="genres",
-                description="Filter by genres ID's",
+                description="Filter by genres IDs (comma-separated)",
                 type={"type": "array", "items": {"type": "number"}},
                 required=False,
             ),
             OpenApiParameter(
                 name="actors",
-                description="Filter by actors ID's",
+                description="Filter by actors IDs (comma-separated)",
                 type={"type": "array", "items": {"type": "number"}},
                 required=False,
             ),
         ]
     )
     def list(self, request, *args, **kwargs):
-        """Get list of movies with filter"""
+        """Get list of movies with optional filtering"""
         return super().list(request, *args, **kwargs)
 
     @staticmethod
@@ -142,7 +141,7 @@ class MovieViewSet(
 
     @extend_schema(
         request=MovieImageSerializer,
-        responses={200, MovieImageSerializer},
+        responses={200: MovieImageSerializer},
     )
     @action(
         methods=["POST"],
@@ -155,11 +154,9 @@ class MovieViewSet(
         movie = self.get_object()
         serializer = self.get_serializer(movie, data=request.data)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class MovieSessionViewSet(viewsets.ModelViewSet):
@@ -180,20 +177,20 @@ class MovieSessionViewSet(viewsets.ModelViewSet):
         parameters=[
             OpenApiParameter(
                 name="date",
-                description="Filter by date",
                 type=OpenApiTypes.DATE,
+                description="Filter by show date (format: YYYY-MM-DD)",
                 required=False,
             ),
             OpenApiParameter(
                 name="movie",
-                description="Filter by movie ID's",
                 type=OpenApiTypes.INT,
+                description="Filter by movie ID",
                 required=False,
             ),
         ]
     )
     def list(self, request, *args, **kwargs):
-        """Get list of movie sessions with filter"""
+        """Get list of movie sessions with optional filtering"""
         return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
